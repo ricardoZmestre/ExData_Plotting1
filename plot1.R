@@ -1,0 +1,71 @@
+# djhfjdf
+rm(list=ls())
+
+library(lubridate)
+library(dplyr)
+
+## initial data handling
+
+# Check the zip file exists, if not download and unpack it.
+# Beware! The download takes a very long time.
+# Beware! The download.file below does not work with no method (or method='auto'),
+# nor method='curl'. Only method='wget' did work for me
+# Beware! The naming of the file is problematic--I need to rid the name from 
+# the %20 parts present, but the %2F parts must be kept.
+zipfilename <- 'exdata%2Fdata%2Fhousehold_power_consumption.zip'
+if (!file.exists(zipfilename)) {
+  # the code below does not work under R 3.1.3, because of wrongly formated url. (?)
+  #download.file(cat('https://d396qusza40orc.cloudfront.net/', filename, sep=''),
+  #              filename, method='wget')
+  url <- paste0('https://d396qusza40orc.cloudfront.net/', zipfilename)
+  download.file(url, zipfilename, method='wget')
+}
+
+# get list of files, including their paths, from the unzipped file
+filename <- unzip(zipfilename, list = TRUE)[,1]
+
+if (!file.exists(filename)) {
+  unzip(zipfilename)
+}
+
+df <- read.table(file = filename, header = TRUE, sep = ';', na.strings = '?',
+                stringsAsFactors=FALSE)
+
+df <- filter(df, Date=='1/2/2007' | Date=='2/2/2007')
+#df <- mutate(x, Date=dmy(Date), Time=hms(Time))
+df <- mutate(df, period=dmy_hms(paste(Date, Time), tz = 'UTC'))
+
+
+png(filename = 'plot1.png', width = 480, height = 480)
+hist(df$Global_active_power, xlab = 'Global Active Power (kilowatts)', main='Global Active Power', col='red')
+dev.off()
+
+png(filename = 'plot2.png', width = 480, height = 480)
+plot(df$period, df$Global_active_power, type = 'l', xlab='', ylab = 'Global Active Power (kilowatts)')
+dev.off()
+
+plot(df$period, df$Sub_metering_1, type = 'l', col='black', xlab='', ylab = 'Energy sub metering')
+lines(df$period, df$Sub_metering_2, type = 'l', col='red')
+lines(df$period, df$Sub_metering_3, type = 'l', col='blue')
+legend(x='topright', legend=c('Sub metering 1', 'Sub metering 2', 'Sub metering 3'), 
+       lwd=2, col=c('black', 'red', 'blue'))
+
+png(filename = 'plot3.png', width = 480, height = 480)
+matplot(df$period, cbind(df$Sub_metering_1, df$Sub_metering_2, df$Sub_metering_3), type = 'l',
+       col=c('black', 'red', 'blue'), xlab='', ylab = 'Energy sub metering', xaxt='n')
+axis.POSIXct(1, df$period)
+legend(x='topright', legend=c('Sub metering 1', 'Sub metering 2', 'Sub metering 3'), 
+       lwd=2, col=c('black', 'red', 'blue'))
+dev.off()
+
+png(filename = 'plot4.png', width = 480, height = 480)
+par(mfrow = c(2,2))
+plot(df$period, df$Global_active_power, type = 'l', xlab='', ylab = 'Global Active Power (kilowatts)')
+plot(df$period, df$Voltage, type = 'l', xlab='', ylab = 'Voltage')
+matplot(df$period, cbind(df$Sub_metering_1, df$Sub_metering_2, df$Sub_metering_3), type = 'l',
+        col=c('black', 'red', 'blue'), xlab='', ylab = 'Energy sub metering', xaxt='n')
+axis.POSIXct(1, df$period)
+legend(x='topright', legend=c('Sub metering 1', 'Sub metering 2', 'Sub metering 3'), 
+       lwd=2, col=c('black', 'red', 'blue'))
+plot(df$period, df$Global_reactive_power, type = 'l', xlab='', ylab = 'Global Reactive Power (kilowatts)')
+dev.off()
