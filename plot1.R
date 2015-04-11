@@ -7,15 +7,13 @@ library(dplyr)
 ## initial data handling
 
 # Check the zip file exists, if not download and unpack it.
-# Beware! The download takes a very long time.
+# Beware! The download takes quite a bit of time.
 # Beware! The download.file below does not work with no method (or method='auto'),
 # nor method='curl'. Only method='wget' did work for me
-# Beware! The naming of the file is problematic--I need to rid the name from 
-# the %20 parts present, but the %2F parts must be kept.
 zipfilename <- 'exdata%2Fdata%2Fhousehold_power_consumption.zip'
 if (!file.exists(zipfilename)) {
   # the code below does not work under R 3.1.3, because of wrongly formated url. (?)
-  #download.file(cat('https://d396qusza40orc.cloudfront.net/', filename, sep=''),
+  #download.file(cat('https://d396qusza40orc.cloudfront.net/', zipfilename, sep=''),
   #              filename, method='wget')
   url <- paste0('https://d396qusza40orc.cloudfront.net/', zipfilename)
   download.file(url, zipfilename, method='wget')
@@ -24,18 +22,27 @@ if (!file.exists(zipfilename)) {
 # get list of files, including their paths, from the unzipped file
 filename <- unzip(zipfilename, list = TRUE)[,1]
 
+# if the file with the full dataset does not exists, unzip the ZIP file
 if (!file.exists(filename)) {
   unzip(zipfilename)
 }
 
-df <- read.table(file = filename, header = TRUE, sep = ';', na.strings = '?',
-                stringsAsFactors=FALSE)
+# Finally, if the short data set 'data.txt' does not exist, create it
+if (!file.exists('data.txt')) {
+  df <- read.table(file = filename, header = TRUE, sep = ';', na.strings = '?',
+                   stringsAsFactors=FALSE)
+  df <- filter(df, Date=='1/2/2007' | Date=='2/2/2007')
+  #df <- mutate(x, Date=dmy(Date), Time=hms(Time))
+  df <- mutate(df, period=dmy_hms(paste(Date, Time), tz = 'UTC'))
+  write.table(df, file = 'data.txt', sep = ';', na = '?', row.names=FALSE)
+} else {
+  df <- read.table(file = 'data.txt', header = TRUE, sep = ';', na.strings = '?',
+                   colClasses=c('character','character','numeric','numeric','numeric',
+                                'numeric','numeric','numeric','numeric','POSIXct'),
+                   stringsAsFactors=FALSE, )
+}
 
-df <- filter(df, Date=='1/2/2007' | Date=='2/2/2007')
-#df <- mutate(x, Date=dmy(Date), Time=hms(Time))
-df <- mutate(df, period=dmy_hms(paste(Date, Time), tz = 'UTC'))
-
-
+# Create the requested chart
 png(filename = 'plot1.png', width = 480, height = 480)
 hist(df$Global_active_power, xlab = 'Global Active Power (kilowatts)', main='Global Active Power', col='red')
 dev.off()
