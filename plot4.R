@@ -74,7 +74,7 @@ par(mfrow = c(2,2))
 # Remove or comment out the line below to look more similar to the requested chart;
 # I am changing the margins to improve the look of the chart (hopefully!) and to
 # play around with the par() function.
-par(mar = c(2,4,2,1), cex=par('cex')*0.8)
+#par(mar = c(2,4,2,1), cex=par('cex')*0.8)
 plot(df$period, df$Global_active_power, type = 'l', xlab='', ylab = 'Global Active Power')
 plot(df$period, df$Voltage, type = 'l', xlab='', ylab = 'Voltage')
 matplot(df$period, cbind(df$Sub_metering_1, df$Sub_metering_2, df$Sub_metering_3), type = 'l',
